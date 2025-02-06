@@ -1,0 +1,79 @@
+{{/*
+Copyright National Payments Corporation of India. All Rights Reserved.
+SPDX-License-Identifier:  GPL-3.0
+*/}}
+{{ $BankName          := .Values.nameOverride }}
+{{ $HlfDomain         := .Values.hlf_domain }}
+{{ $ChannelName       := .Values.channel_name }}
+{{ $Msp_base_dir      := printf "%s%s" .Values.workdir "/peer/crypto/users/" }}
+
+{{- if .Values.fabric_actions.pkg_chaincode | default false }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "fabric-ops.fullname" $ }}-rev-{{ $.Release.Revision }}
+  labels:
+    {{- include "fabric-ops.labels" $ | nindent 4 }}
+spec:
+  template:
+    metadata:
+      {{- with $.Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "fabric-ops.selectorLabels" $ | nindent 8 }}
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fabric-ops.serviceAccountName" $ }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      restartPolicy: Never
+      initContainers:
+      containers:
+        - name: cli
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          workingDir: {{ $.Values.workdir }}/peer
+          command: ["/bin/sh","-c"]
+          args:
+           - /scripts/fabric_pkg_chaincode.sh;
+          tty: true
+          volumeMounts:
+            - name: fabric-ops
+              subPath: fabric_enroll.sh
+              mountPath: /scripts/fabric_enroll.sh
+            - name: scripts
+              subPath: fabric_pkg_chaincode.sh
+              mountPath: /scripts/fabric_pkg_chaincode.sh
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ include "fabric-ops.fullname" $ }}
+            defaultMode: 0777
+        - name: fabric-ops
+          configMap:
+            name: {{ include "fabric-ops.fullname" $ }}-functions
+            defaultMode: 0777
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+{{- end }}

@@ -1,0 +1,47 @@
+{{/*
+Copyright National Payments Corporation of India. All Rights Reserved.
+SPDX-License-Identifier:  GPL-3.0
+*/}}
+
+{{- $Project           := .Values.project }}
+{{- $HlfDomain         := .Values.hlf_domain }}
+
+{{- if .Values.fabric_actions.pkg_chaincode | default false }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fabric-ops.fullname" $ }}
+  labels:
+    {{- include "fabric-ops.labels" $ | nindent 4 }}
+data:
+  fabric_pkg_chaincode.sh: |
+    LABEL=$(echo "{{ $.Values.cc_name }}-{{ $.Values.cc_version }}")
+    echo "{
+        \"address\": \"{{ $.Values.cc_endpoint }}\",
+        \"dial_timeout\": \"10s\",
+        \"tls_required\": false,
+        \"client_auth_required\": false,
+        \"client_key\": \"-----BEGIN EC PRIVATE KEY----- ... -----END EC PRIVATE KEY-----\",
+        \"client_cert\": \"-----BEGIN CERTIFICATE----- ... -----END CERTIFICATE-----\",
+        \"root_cert\": \"-----BEGIN CERTIFICATE---- ... -----END CERTIFICATE-----\"
+        }" > /tmp/connection.json
+
+    echo "{\"path\":\"\",\"type\":\"external\",\"label\":\"$LABEL\"}" > /tmp/metadata.json
+
+    tar -cvzf /tmp/code.tar.gz -C /tmp connection.json
+
+    tar -cvzf /tmp/$LABEL.tar.gz -C /tmp code.tar.gz metadata.json
+
+    PKG_SHA=$(sha256sum /tmp/$LABEL.tar.gz | sed 's/\s.*//')
+
+    PKG_ID=$(echo "$LABEL:$PKG_SHA")
+
+    source /scripts/fabric_enroll.sh
+
+    upload_file /tmp/$LABEL.tar.gz {{ $.Values.filestore_endpoint }}/{{ $Project }}/ 
+
+    echo LABEL: $LABEL
+
+    echo PKG_ID: $PKG_ID
+
+{{- end }}

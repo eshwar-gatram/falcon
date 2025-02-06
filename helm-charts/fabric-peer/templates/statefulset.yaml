@@ -167,6 +167,11 @@ spec:
           {{- $peerServicePort := .peerServicePort | default $.Values.global.peerServicePort }}
           {{- $IngressPort     := $.Values.global.ingressPort }}
           env:
+          # chaincode.externalBuilders
+            # - name: CORE_CHAINCODE_EXTERNALBUILDERS_NAME
+            #   value: "external-builder"
+            # - name: CORE_CHAINCODE_EXTERNALBUILDERS_PATH
+            #   value: "/builders/external"
             - name: CORE_PEER_ADDRESS
               value: {{ .identity_name }}:{{ $peerServicePort }}
             - name: CORE_PEER_GOSSIP_EXTERNALENDPOINT
@@ -259,6 +264,16 @@ spec:
             - name: common
               mountPath: {{ $.Values.fabric_base_dir }}/msp/config.yaml
               subPath: config.yaml
+            - name: external-builders
+              mountPath: /opt/hyperledger/ccaas_builder/bin/detect
+              subPath: detect
+            - name: external-builders
+              mountPath: /opt/hyperledger/ccaas_builder/bin/build
+              subPath: build
+            - name: external-builders
+              mountPath: /opt/hyperledger/ccaas_builder/bin/release
+              subPath: release
+
       volumes:
         - name: common
           configMap:
@@ -267,6 +282,10 @@ spec:
         - name: config
           configMap:
             name: {{ .name }}-{{ include "fabric-peer.fullname" $ }}-conf
+            defaultMode: 0777
+        - name: external-builders
+          configMap: 
+            name: {{ include "fabric-peer.name" $ }}-external-builder
             defaultMode: 0777
         {{- if not (.require_certs_dir_persistence | default $.Values.global.require_certs_dir_persistence) }}
         - name: cert-peer
