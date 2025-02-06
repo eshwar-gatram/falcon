@@ -1,0 +1,67 @@
+# Default values for ca-user.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: "initialpeerorg"
+fullnameOverride: ""
+project: yourproject
+
+imagePullSecrets: []
+image:
+  repository: npcioss/hlf-builder
+  pullPolicy: IfNotPresent
+  ## Overrides the image tag whose default is the chart appVersion.
+  tag: "2.4"
+
+
+filestore_endpoint: http://filestore.fabric
+filestore_ssl: false # Make it `true` if `filestore_endpoint` is over https.
+retry_seconds: 10
+
+# cc_tar_file: channel-wallet.tar.gz
+cc_name: channel-walletinfo
+cc_version: v1.0
+cc_endpoint: channel-walletinfo-chaincode:7051
+
+hlf_domain: "fabric"
+hlf_channel: "mychannel"
+fabric_actions: 
+ pkg_chaincode: true
+
+csr_names_cn: IN
+csr_names_st: Maharashtra
+csr_names_l: Mumbai
+csr_names_o: Your Company Name
+
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+  # fsGroup: 2000
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
